@@ -36,12 +36,12 @@ class ThreadSafeQueue {
             // A precaution what if OS might accidentally wakes up consumer thread
             cv.wait(lock, [this]() {return (!q.empty() || isShuttingDown)})  //q is not empty awake thread otherwise sleep
 
-            if (q.empty()) return true;    //when engine is shutting down and q.empty just tell the worker thread break the loop.
+            if (q.empty()) return false;    //when engine is shutting down and q.empty just tell the worker thread break the loop.
 
             // if (!q.empty()){      //can't use this method in place of wait because the thread will continously ran consumes CPU
             value = q.front();
             q.pop();
-            return false;
+            return true;
             // }
         }
 
