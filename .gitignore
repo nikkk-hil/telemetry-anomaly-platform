@@ -1,0 +1,72 @@
+Prerequisites
+
+*.d
+
+Compiled Object files
+
+*.slo
+*.lo
+*.o
+*.obj
+
+Precompiled Headers
+
+*.gch
+*.pch
+
+Compiled Dynamic libraries
+
+*.so
+*.dylib
+*.dll
+
+Compiled Static libraries
+
+*.lai
+*.la
+*.a
+*.lib
+
+Executables
+
+*.exe
+*.out
+*.app
+
+Build folders and directories
+
+build/
+bin/
+out/
+Debug/
+Release/
+x64/
+x86/
+
+Visual Studio specific files
+
+.vs/
+*.user
+*.aps
+*.ncb
+*.suo
+*.sln.docstates
+*.dsd
+*.pdb
+*.idb
+*.VC.db
+*.VC.opendb
+
+VS Code specific files (optional: comment out if you want to share workspace settings)
+
+.vscode/
+
+OS generated files
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
