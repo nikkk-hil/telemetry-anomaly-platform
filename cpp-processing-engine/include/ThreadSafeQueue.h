@@ -34,7 +34,7 @@ class ThreadSafeQueue {
             std::unique_lock<std::mutex> lock(mtx);   //unlock mutex when thread goes to sleep and lock when thread is awake.
             
             // A precaution what if OS might accidentally wakes up consumer thread
-            cv.wait(lock, [this]() {return (!q.empty() || isShuttingDown)})  //q is not empty awake thread otherwise sleep
+            cv.wait(lock, [this]() {return (!q.empty() || isShuttingDown);});  //q is not empty awake thread otherwise sleep
 
             if (q.empty()) return false;    //when engine is shutting down and q.empty just tell the worker thread break the loop.
 

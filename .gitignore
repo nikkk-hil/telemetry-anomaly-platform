@@ -70,3 +70,5 @@ OS generated files
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+test-client.js

@@ -3,21 +3,30 @@
 #pragma comment(lib, "ws2_32.lib") // Tells Visual Studio to link the network library
 
 #include <string>
+#include <mutex>
+#include <unordered_set>
 #include <condition_variable>
-#include <ThreadSafeQueue.h>
+#include "ThreadSafeQueue.h"
 #include <thread>
 
 class TCPServer{
     private:
         int port;
         std::string ip;
+        std::mutex mtx;
         std::thread thread;
         SOCKET serverSocket;
+        std::unordered_set<SOCKET> clients;
         ThreadSafeQueue<std::string>* queue;
 
-        void startAccepting() const {   //Creating per connection per thread. System failure at massive scale.
+        void startAccepting() {   //Creating per connection per thread. System failure at massive scale.
             while (true){
                 SOCKET clientSocket = accept(serverSocket, nullptr, nullptr); //a blocking system call freeze the thread untill client calls stores client
+
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    clients.insert(clientSocket);
+                }
 
                 if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
                     break;
@@ -29,6 +38,11 @@ class TCPServer{
                         
                         if (byteRecieved <= 0){
                             closesocket(clientSocket);   //free up memory by closing file decriptor 
+                            {
+                                std::lock_guard<std::mutex> lock(mtx);
+                                clients.erase(clientSocket);
+                            }
+                            
                             break;
                         }
 
@@ -71,6 +85,21 @@ class TCPServer{
             this->thread = std::thread([this]() {startAccepting();});
             
 
+        }
+
+        void alertBot(std::string ip){
+            std::string payload = "BLOCK:" + ip;
+            const char* byte_ptr = payload.data();
+            const int byte_cnt = payload.size();
+
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                for (auto clientSocket: clients){
+                    send(clientSocket, byte_ptr, byte_cnt, 0);
+                }
+            }
+
+            std::cout << "[ALERT] Sent BLOCK command to all connected Node.js gateways for IP: " << ip << std::endl;
         }
 
         ~TCPServer(){
