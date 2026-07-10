@@ -2,12 +2,13 @@
 #include <ws2tcpip.h> // Required for modern IP string conversions
 #pragma comment(lib, "ws2_32.lib") // Tells Visual Studio to link the network library
 
-#include <string>
 #include <mutex>
+#include <thread>
+#include <string>
 #include <unordered_set>
 #include <condition_variable>
 #include "ThreadSafeQueue.h"
-#include <thread>
+#include "MessageFramer.h"
 
 class TCPServer{
     private:
@@ -29,13 +30,13 @@ class TCPServer{
                 }
 
                 if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
-                    break;
+                    break;    
 
                 std::thread recieve([this, clientSocket]() {
                     while(true){
                         char buffer[1024];
-                        int byteRecieved = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped
-                        
+                        int byteRecieved = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped                
+
                         if (byteRecieved <= 0){
                             closesocket(clientSocket);   //free up memory by closing file decriptor 
                             {
