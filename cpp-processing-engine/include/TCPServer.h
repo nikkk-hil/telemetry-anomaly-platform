@@ -30,9 +30,10 @@ class TCPServer{
                 }
 
                 if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
-                    break;    
+                    break; 
 
                 std::thread recieve([this, clientSocket]() {
+                    MessageFramer mf(queue);
                     while(true){
                         char buffer[1024];
                         int byteRecieved = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped                
@@ -47,8 +48,7 @@ class TCPServer{
                             break;
                         }
 
-                        std::string data(buffer, byteRecieved);
-                        queue->push(data);
+                        mf.framing_and_append(buffer, byteRecieved);
                     
                     }
                 });
