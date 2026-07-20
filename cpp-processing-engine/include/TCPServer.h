@@ -5,6 +5,7 @@
 #include <mutex>
 #include <thread>
 #include <string>
+#include <cstdint>
 #include <unordered_set>
 #include <condition_variable>
 #include "ThreadSafeQueue.h"
@@ -90,17 +91,26 @@ class TCPServer{
 
         void alertBot(std::string ip){
             std::string payload = "BLOCK:" + ip;
-            const char* byte_ptr = payload.data();
-            const int byte_cnt = payload.size();
 
             {
                 std::lock_guard<std::mutex> lock(mtx);
                 for (auto clientSocket: clients){
-                    send(clientSocket, byte_ptr, byte_cnt, 0);
+                    sendFramed(clientSocket, payload);
                 }
             }
 
             std::cout << "[ALERT] Sent BLOCK command to all connected Node.js gateways for IP: " << ip << std::endl;
+        }
+
+        void sendFramed(SOCKET clientSocket, const std::string& message){
+
+            std::uint32_t messageLen = message.size();
+            const char* prefix_byte_ptr = reinterpret_cast<const char*>(&messageLen);
+            const char* byte_ptr = message.data();
+
+            send(clientSocket, prefix_byte_ptr, sizeof(messageLen), 0);
+            send(clientSocket, byte_ptr, message.size(), 0);
+
         }
 
         ~TCPServer(){
