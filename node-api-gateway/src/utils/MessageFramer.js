@@ -49,4 +49,4 @@ class MessageFramer {
     }
 }
 
-module.exports = { MessageFramer };
+export { MessageFramer };
