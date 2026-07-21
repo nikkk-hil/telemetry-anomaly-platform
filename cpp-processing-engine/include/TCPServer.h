@@ -106,10 +106,10 @@ class TCPServer{
 
             std::uint32_t messageLen = message.size();
             const char* prefix_byte_ptr = reinterpret_cast<const char*>(&messageLen);
-            const char* byte_ptr = message.data();
+            const char* message_byte_ptr = message.data();
 
             send(clientSocket, prefix_byte_ptr, sizeof(messageLen), 0);
-            send(clientSocket, byte_ptr, message.size(), 0);
+            send(clientSocket, message_byte_ptr, message.size(), 0);
 
         }
 
