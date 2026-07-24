@@ -25,21 +25,21 @@ class TCPServer{
             while (true){
                 SOCKET clientSocket = accept(serverSocket, nullptr, nullptr); //a blocking system call freeze the thread untill client calls stores client
 
+                if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
+                    break;
+
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     clients.insert(clientSocket);
                 }
 
-                if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
-                    break; 
-
                 std::thread recieve([this, clientSocket]() {
                     MessageFramer mf(queue);
                     while(true){
                         char buffer[1024];
-                        int byteRecieved = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped                
+                        int bytesReceived = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped                
 
-                        if (byteRecieved <= 0){
+                        if (bytesReceived <= 0){
                             closesocket(clientSocket);   //free up memory by closing file decriptor 
                             {
                                 std::lock_guard<std::mutex> lock(mtx);
@@ -49,7 +49,8 @@ class TCPServer{
                             break;
                         }
 
-                        mf.framing_and_append(buffer, byteRecieved);
+                        // std::cout << "bytes received: " << bytesReceived << std::endl;
+                        mf.framing_and_append(buffer, bytesReceived);
                     
                     }
                 });
