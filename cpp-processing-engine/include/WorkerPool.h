@@ -28,12 +28,6 @@ class WorkerPool{
                     break;
                 
                 try {
-                        
-                    {
-                        std::lock_guard<std::mutex> lock(mtx);
-                        std::cout << "[len=" << data.length() << "] [" << data << "]" << std::endl;
-                    }
-                
                 // 1. Convert the dumb string into a smart JSON object
                 json parsedData = json::parse(data);
 
