@@ -3,6 +3,7 @@
 #pragma comment(lib, "ws2_32.lib") // Tells Visual Studio to link the network library
 
 #include <mutex>
+#include <vector>
 #include <thread>
 #include <string>
 #include <cstdint>
@@ -20,10 +21,12 @@ class TCPServer{
         SOCKET serverSocket;
         std::unordered_set<SOCKET> clients;
         ThreadSafeQueue<std::string>* queue;
+        std::vector<std::thread> receiveThread;
+        std::atomic<bool> isShuttingDown{false};
 
         void startAccepting() {   //Creating per connection per thread. System failure at massive scale.
-            while (true){
-                SOCKET clientSocket = accept(serverSocket, nullptr, nullptr); //a blocking system call freeze the thread untill client calls stores client
+            while (!isShuttingDown){
+                SOCKET clientSocket = accept(serverSocket, nullptr, nullptr); //a blocking system call freeze the thread until client calls stores client
 
                 if (clientSocket == INVALID_SOCKET)  //when server socket is destroyed
                     break;
@@ -33,17 +36,21 @@ class TCPServer{
                     clients.insert(clientSocket);
                 }
 
-                std::thread recieve([this, clientSocket]() {
+                receiveThread.emplace_back([this, clientSocket]() {
                     MessageFramer mf(queue);
-                    while(true){
+                    while(!isShuttingDown){
                         char buffer[1024];
                         int bytesReceived = recv(clientSocket, buffer, 1024, 0);  //recv = 0 nodejs hang up the connection  recv < 0 connection dropped                
 
+                        if (isShuttingDown) break;
+
                         if (bytesReceived <= 0){
-                            closesocket(clientSocket);   //free up memory by closing file decriptor 
                             {
-                                std::lock_guard<std::mutex> lock(mtx);
-                                clients.erase(clientSocket);
+                                std::lock_guard<std::mutex> lock(mtx);  //All operation must be done before releasing the lock, if not destructor acquire the lock midway and causes the race condition.
+                                if (clients.count(clientSocket)){
+                                    closesocket(clientSocket);   //free up memory by closing file decriptor 
+                                    clients.erase(clientSocket);
+                                }
                             }
                             
                             break;
@@ -54,11 +61,6 @@ class TCPServer{
                     
                     }
                 });
-
-                if (recieve.joinable()){
-                    recieve.detach();
-                }
-
                 
             }
         }
@@ -115,11 +117,24 @@ class TCPServer{
         }
 
         ~TCPServer(){
+            isShuttingDown = true;
             closesocket(serverSocket);  //prevents deadlock by focefully destroying the socket
 
             if (thread.joinable()) //thread finished execution must join to release memory
                 thread.join();
 
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                for(auto clientSocket: clients)
+                    closesocket(clientSocket);
+                clients.clear();
+            }
+
+            for(auto& t: receiveThread){
+                if (t.joinable())
+                    t.join();
+            }
+                
             WSACleanup(); // Shut down Windows networking drivers
         }
 
