@@ -12,12 +12,9 @@ class ThreadSafeQueue {
         std::queue<T> q;
         std::mutex mtx;
         std::condition_variable cv;
-        bool isShuttingDown;
+        atomic<bool> isShuttingDown{false};
 
     public:
-        ThreadSafeQueue() {
-            isShuttingDown = false;
-        }
 
         void push(T value){
             {
@@ -46,11 +43,7 @@ class ThreadSafeQueue {
         }
 
         void shutdown(){
-            {
-                std::lock_guard<std::mutex> lock(mtx);
-                isShuttingDown = true;
-            }
-
+            isShuttingDown = true;
             cv.notify_all();
         }
 
