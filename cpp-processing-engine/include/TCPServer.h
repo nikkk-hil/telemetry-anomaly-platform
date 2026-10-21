@@ -3,6 +3,7 @@
 #pragma comment(lib, "ws2_32.lib") // Tells Visual Studio to link the network library
 
 #include <mutex>
+#include <atomic>
 #include <vector>
 #include <thread>
 #include <string>

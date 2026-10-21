@@ -3,10 +3,9 @@ import { sendTelemetry } from "../engineConnection.js";
 
 function blockMiddleware(req, res, next){
     const clientIp = req.ip;
-    console.log(clientIp);
-
+    // console.log(req.ip);
     if (isBlocked(clientIp))
-        return res.status(403).json({ error: 'Forbidden: IP blocked due to suspicious activity.' });
+        return res.status(429).json({ error: 'Too many requests.' });
 
     sendTelemetry(clientIp, req.originalUrl);
 

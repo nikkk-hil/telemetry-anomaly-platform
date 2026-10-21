@@ -1,6 +1,6 @@
 import net from "net";
-import { MessageFramer } from "./utils/messageFramer.js";
-import { addToBlocklist } from "./utils/blocklist.js";
+import { MessageFramer } from "./utils/MessageFramer.js";
+import { persistBlockedIp } from "./persistence/blocklistStore.js";
 
 let socket = null;
 let retryDelay = 1000;
@@ -14,7 +14,7 @@ const connectToEngine = () => {
   socket.connect(process.env.ENGINE_PORT, process.env.ENGINE_HOST, () => {
     isConnected = true;
     retryDelay = 1000;
-    console.log("Socket Conneted");
+    console.log("Socket Connected");
   });
 
   socket.on("data", (chunk) => {
@@ -50,10 +50,12 @@ const sendTelemetry = (ip, endpoint) => {
   socket.write(framed);
 };
 
-const handleEngineMessage = (message) => {
+const handleEngineMessage = async (message) => {
   if (message.startsWith("BLOCK:")) {
     const ip = message.substring(6).trim();
-    addToBlocklist(ip);
+    if (!ip) return;
+
+    await persistBlockedIp(ip);
   }
 };
 

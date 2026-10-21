@@ -7,6 +7,7 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
+#include <iostream>
 #include "ThreadSafeQueue.h"
 #include "json.hpp"
 
@@ -23,6 +24,11 @@ class WorkerPool{
 
         void dataProcessing() {
             while(true){
+                static int count = 0;
+                if (++count % 1000 == 0) {
+                    std::cout << "[QueueMonitor] approx size: " << queue->size() << std::endl;
+                }
+
                 std::string data; 
                 if (!queue->wait_and_pop(data))  //shutdown condition.
                     break;
@@ -34,22 +40,18 @@ class WorkerPool{
                 // 2. Access the keys! (The library automatically converts the types)
                 std::string userIp = parsedData["ip"];
                 long long timestamp = parsedData["timestamp"];
-                
+                bool shouldAlert = false;
                 {
                     std::lock_guard<std::mutex> lock(mtx);
-
-                    while(!ipFreq[userIp].empty() && (timestamp - ipFreq[userIp].front() > 10000))
-                        ipFreq[userIp].pop();
-
-                    ipFreq[userIp].push(timestamp);
-
-                    if (ipFreq[userIp].size() >= 50){
-                        alert(userIp);
-                        while (!ipFreq[userIp].empty()) ipFreq[userIp].pop();
+                    auto& q = ipFreq[userIp];
+                    while (!q.empty() && timestamp - q.front() > 10000) q.pop();
+                    q.push(timestamp);
+                    if (q.size() >= 50) {
+                        shouldAlert = true;
+                        while (!q.empty()) q.pop();
                     }
-
-
-                } 
+                }
+                if (shouldAlert) alert(userIp);   // outside the lock
             }
                 
                 catch (const json::parse_error& e) {

@@ -1,6 +1,7 @@
 #pragma once   //This line tells the compiler to load this file once irrespective of how many files ask for it.
 
 #include<queue>
+#include<atomic>
 #include<mutex>
 #include<condition_variable>   //allows threads to suspend execution untill another thread notifies.
 
@@ -12,9 +13,16 @@ class ThreadSafeQueue {
         std::queue<T> q;
         std::mutex mtx;
         std::condition_variable cv;
-        atomic<bool> isShuttingDown{false};
+        std::atomic<bool> isShuttingDown{false};
 
     public:
+
+        int size(){
+            {
+                std::lock_guard<std::mutex> lock(mtx);   //lock mutex
+                return q.size();  //unlock mutex if this line crashes
+            }  
+        }
 
         void push(T value){
             {

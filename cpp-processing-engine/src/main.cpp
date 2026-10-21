@@ -1,11 +1,9 @@
-
 #include <iostream>
 #include <string>
 
 #include "../include/ThreadSafeQueue.h"
 #include "../include/WorkerPool.h"
 #include "../include/TCPServer.h"
-
 
 int main() {
     ThreadSafeQueue<std::string> sharedQ;
